@@ -1,4 +1,5 @@
-export default function TastList({ tasks, activeTaskId, onSelect }) {
+export default function TaskList({ tasks, activeTaskId, onSelect }) {
+  console.log("tasks ", tasks);
   if (!tasks.length) {
     return (
       <div>
@@ -7,30 +8,31 @@ export default function TastList({ tasks, activeTaskId, onSelect }) {
       </div>
     );
   }
+  return (
+    <div> 
+      <div>Your tasks</div>
+      {tasks.map((task) => {
+        const repo = task.repo_url.replace("https://github.com/", "");
+        const isActive = task.id === activeTaskId;
+        const time = task.created_at
+          ? new Date(task.created_at).toLocaleString()
+          : "";
 
-  <div>
-    <div>Your tasks</div>
-    {tasks.map((task) => {
-      const repo = task.repo_url.replace("https://github.com/", "");
-      const isActive = task.id === activeTaskId;
-      const time = task.created_at
-        ? new Date(task.created_at).toLocaleString()
-        : "";
-
-      return (
-        <div>
-          <div>{repo}</div>
+        return (
           <div>
-            {task.task_description.length > 60
-              ? task.task_description.slice(0, 60) + "..."
-              : task.task_description}
+            <div>{repo}</div>
+            <div>
+              {task.task_description.length > 60
+                ? task.task_description.slice(0, 60) + "..."
+                : task.task_description}
+            </div>
+            <div>
+              <span>{time}</span>
+              <span>{task.status}</span>
+            </div>
           </div>
-          <div>
-            <span>{time}</span>
-            <span>{task.status}</span>
-          </div>
-        </div>
-      );
-    })}
-  </div>;
+        );
+      })}
+    </div>
+  );
 }

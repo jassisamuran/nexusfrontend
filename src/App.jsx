@@ -1,5 +1,7 @@
 // frontend/src/App.jsx
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import DashboardPage from "./pages/DashboardPage";
+import LoginPage from "./pages/LoginPage";
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem("access_token");
@@ -19,7 +21,6 @@ export default function App() {
             </PrivateRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );
