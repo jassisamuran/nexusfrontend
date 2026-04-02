@@ -103,10 +103,8 @@ export async function createTask(repoUrl, taskDescription) {
 
 export async function listTasks() {
   const res = await apiFetch("/tasks/");
-
   if (!res) return [];
   const data = await res.json();
-  console.log("data is", data);
   return data.tasks || [];
 }
 
