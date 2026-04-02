@@ -12,7 +12,9 @@ export function useTaskStream(taskId) {
   const loadTask = useCallback(async () => {
     if (!taskId) return;
     const data = await getTask(taskId);
-    if (data) setTaskData(data);
+    if (data) {
+      setTaskData(data);
+    }
 
     return data;
   }, [taskId]);
@@ -23,30 +25,37 @@ export function useTaskStream(taskId) {
 
   useEffect(() => {
     if (!taskId) return;
+    console.log(`[EFFECT START] taskId=${taskId}`);
+
+    let intentionallyClosed = false; // ← LOCAL to THIS effect instance, not a ref
 
     loadTask();
 
     setEvents([]);
+    setTaskData(null);
 
     if (wsRef.current) {
+      console.log(`[CLOSING OLD WS] before creating new one`);
+
       wsRef.current.close();
     }
 
     const ws = createTaskWebSocket(
       taskId,
       (message) => {
+        console.log("now is", message);
+        console.log(`[MESSAGE] taskId=${taskId}`, message);
+
         addEvent(message);
 
         if (message.event_type === "COMPLETE") {
-          setTaskData((prev) =>
-            prev
-              ? { ...prev, status: "complete", progress_percent: 100 }
-              : prev,
-          );
+          setTaskData((prev) => ({ ...prev, status: "complete" }));
+
           loadTask();
         }
         if (message.event_type === "FAILED") {
           setTaskData((prev) => (prev ? { ...prev, status: "failed" } : prev));
+          loadTask(); // ✅ add this — verify against DB
         }
         if (message.event_type === "STAGE_START") {
           const stageProgress = {
@@ -62,7 +71,7 @@ export function useTaskStream(taskId) {
           for (const [key, val] of Object.entries(stageProgress)) {
             if (msg.toLowerCase().includes(key.toLowerCase())) {
               setTaskData((prev) =>
-                prev ? { ...prev, progress_percent: val } : prev,
+                prev ? { ...prev, progress_percent: val, status: key } : prev,
               );
               break;
             }
@@ -71,6 +80,8 @@ export function useTaskStream(taskId) {
       },
       () => {
         setConnected(false);
+        if (intentionallyClosed) return; // ← DON'T poll on intentional close
+
         pollRef.current = setInterval(async () => {
           const data = await loadTask();
           if (data && ["complete", "failed"].includes(data.status)) {
@@ -84,10 +95,12 @@ export function useTaskStream(taskId) {
     ws.onopen = () => setConnected(true);
 
     return () => {
+      intentionallyClosed = true; // ← sets THIS closure's variable, old onclose reads THIS
       ws.close();
+      loadTask();
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [taskId, loadTask, addEvent]);
 
-  return { events, taskData, connected };
+  return { events, taskData, connected, loadTask };
 }

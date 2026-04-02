@@ -1,6 +1,8 @@
 import { METHOD, STORAGE_KEYS } from "./constants";
 
 const BASE = "";
+const API = import.meta.env.VITE_API_URL;
+const WS = import.meta.env.VITE_WS_URL;
 
 export function getToken() {
   return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
@@ -21,7 +23,7 @@ async function refreshAccesstoken() {
   if (!refresh) return false;
 
   try {
-    const res = await fetch("/auth/refresh", {
+    const res = await fetch(`${API}/auth/refresh`, {
       method: METHOD.POST,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refresh }),
@@ -50,7 +52,7 @@ export async function apiFetch(path, options = {}) {
     const refreshed = await refreshAccesstoken();
     if (refreshed) {
       headers.Authorization = `Bearer ${getToken()}`;
-      res = await fetch(BASE, { ...options, headers });
+      res = await fetch(BASE + path, { ...options, headers });
       return res;
     } else {
       clearToken();
@@ -62,7 +64,7 @@ export async function apiFetch(path, options = {}) {
 }
 
 export async function login(email, password) {
-  const res = await fetch("/auth/login", {
+  const res = await fetch(`${API}/auth/login`, {
     method: METHOD.POST,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -74,7 +76,7 @@ export async function login(email, password) {
 }
 
 export async function register(username, email, password) {
-  const res = await fetch("/auth/register", {
+  const res = await fetch(`${API}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, email, password }),
@@ -88,7 +90,7 @@ export async function register(username, email, password) {
 // Task endponts
 
 export async function createTask(repoUrl, taskDescription) {
-  const res = await apiFetch("/tasks/", {
+  const res = await apiFetch(`${API}/tasks/`, {
     method: "POST",
     body: JSON.stringify({
       repo_url: repoUrl,
@@ -102,14 +104,14 @@ export async function createTask(repoUrl, taskDescription) {
 }
 
 export async function listTasks() {
-  const res = await apiFetch("/tasks/");
+  const res = await apiFetch(`${API}/tasks/`);
   if (!res) return [];
   const data = await res.json();
   return data.tasks || [];
 }
 
 export async function getTask(taskId) {
-  const res = await apiFetch(`/tasks/${taskId}`);
+  const res = await apiFetch(`${API}/tasks/${taskId}`);
   if (!res) return null;
   return res.json();
 }
@@ -122,7 +124,7 @@ export async function getMe() {
 
 export function createTaskWebSocket(taskId, onMessage, onClose) {
   const token = getToken();
-  const wsUrl = `ws://localhost:8000/tasks/ws/${taskId}?token=${token}`;
+  const wsUrl = `${WS}/tasks/ws/${taskId}?token=${token}`;
   const ws = new WebSocket(wsUrl);
 
   ws.onmessage = (e) => {
